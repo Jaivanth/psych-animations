@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Loop Animation</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+        }
+        canvas {
+            border: 2px solid white;
+            background-color: #222;
+            display: block;
+            margin: auto;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <h2>JavaScript Event Loop Animation</h2>
+    
+    <div class="container">
+        <div class="column">
+            <h3>Task Queue</h3>
+            <canvas id="taskQueueCanvas" width="150" height="400"></canvas>
+        </div>
+        <div class="column">
+            <h3>Event Loop</h3>
+            <canvas id="eventLoopCanvas" width="200" height="200"></canvas>
+        </div>
+        <div class="column">
+            <h3>Call Stack</h3>
+            <canvas id="callStackCanvas" width="150" height="400"></canvas>
+        </div>
+        <div class="column">
+            <h3>Executed Tasks</h3>
+            <canvas id="executedCanvas" width="150" height="400"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const taskCanvas = document.getElementById("taskQueueCanvas");
+        const stackCanvas = document.getElementById("callStackCanvas");
+        const executedCanvas = document.getElementById("executedCanvas");
+        const eventLoopCanvas = document.getElementById("eventLoopCanvas");
+
+        const taskCtx = taskCanvas.getContext("2d");
+        const stackCtx = stackCanvas.getContext("2d");
+        const executedCtx = executedCanvas.getContext("2d");
+        const eventLoopCtx = eventLoopCanvas.getContext("2d");
+
+        let queue = [];  // Task queue
+        let stack = [];  // Call stack (processing)
+        let executedTasks = [];  // Completed tasks
+        let frame = 0;
+        let rotationAngle = 0;
+
+        function drawBox(ctx, x, y, text, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, 120, 50);
+            ctx.strokeStyle = "white";
+            ctx.strokeRect(x, y, 120, 50);
+            ctx.fillStyle = "white";
+            ctx.font = "14px Arial";
+            ctx.fillText(text, x + 20, y + 30);
+        }
+
+        function drawEventLoop() {
+            // Clear all canvases
+            taskCtx.clearRect(0, 0, taskCanvas.width, taskCanvas.height);
+            stackCtx.clearRect(0, 0, stackCanvas.width, stackCanvas.height);
+            executedCtx.clearRect(0, 0, executedCanvas.width, executedCanvas.height);
+            eventLoopCtx.clearRect(0, 0, eventLoopCanvas.width, eventLoopCanvas.height);
+
+            // Draw Task Queue (left)
+            for (let i = 0; i < queue.length; i++) {
+                drawBox(taskCtx, 15, 30 + i * 60, queue[i], "#33ff57");  // Green
+            }
+
+            // Draw Call Stack (middle)
+            for (let i = 0; i < stack.length; i++) {
+                drawBox(stackCtx, 15, 30 + i * 60, stack[i], "#ff5733");  // Red
+            }
+
+            // Draw Executed Tasks (right)
+            for (let i = 0; i < executedTasks.length; i++) {
+                drawBox(executedCtx, 15, 30 + i * 60, executedTasks[i], "#3399ff");  // Blue
+            }
+
+            // Process tasks with proper execution timing
+            if (frame % 120 === 0 && queue.length > 0 && stack.length === 0) {
+                let task = queue.shift();
+                stack.push(task);
+
+                // Simulate execution in the stack before moving to executed tasks
+                setTimeout(() => {
+                    executedTasks.push(stack.pop());
+                    if (executedTasks.length > 5) executedTasks.shift(); // Keep executed list short
+                }, 1500);
+            }
+
+            // Draw rotating event loop (center)
+            drawRotatingEventLoop();
+
+            frame++;
+            requestAnimationFrame(drawEventLoop);
+        }
+
+        function drawRotatingEventLoop() {
+            eventLoopCtx.save();
+            eventLoopCtx.translate(100, 100);  // Move origin to center
+            eventLoopCtx.rotate(rotationAngle);  // Apply rotation
+            eventLoopCtx.beginPath();
+            eventLoopCtx.arc(0, 0, 70, 0, Math.PI * 2);  // Outer Circle
+            eventLoopCtx.strokeStyle = "white";
+            eventLoopCtx.lineWidth = 3;
+            eventLoopCtx.stroke();
+            
+            // Arrows (indicating rotation)
+            eventLoopCtx.fillStyle = "white";
+            eventLoopCtx.beginPath();
+            eventLoopCtx.moveTo(40, -5);
+            eventLoopCtx.lineTo(60, 0);
+            eventLoopCtx.lineTo(40, 5);
+            eventLoopCtx.fill();
+
+            eventLoopCtx.beginPath();
+            eventLoopCtx.moveTo(-40, 5);
+            eventLoopCtx.lineTo(-60, 0);
+            eventLoopCtx.lineTo(-40, -5);
+            eventLoopCtx.fill();
+
+            eventLoopCtx.restore();
+            rotationAngle += 0.05;  // Rotate slowly
+        }
+
+        // Simulate adding multiple tasks to the queue
+        function addTask() {
+            queue.push("Task " + (queue.length + 1));
+        }
+
+        // Start animation loop
+        drawEventLoop();
+
+        // Add tasks every 2 seconds
+        setInterval(() => {
+            addTask();
+            addTask();  // Adds two tasks at once
+        }, 4000);
+    </script>
+</body>
+</html>
